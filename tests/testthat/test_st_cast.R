@@ -121,3 +121,33 @@ test_that("st_cast can crack GEOMETRYCOLLECTION", {
   expect_is(sfc2 %>% st_cast, "sfc_GEOMETRY")
   expect_equal(sapply(sfc2 %>% st_cast, class)[2, ], c("LINESTRING", "MULTILINESTRING", "MULTIPOINT"))
 })
+
+test_that("st_cast works with empty geometries", {
+	empty_point <- st_as_sfc("POINT EMPTY")
+	empty_line <- st_as_sfc("LINESTRING EMPTY")
+	empty_poly <- st_as_sfc("POLYGON EMPTY")
+
+	# sfc
+	expect_is(st_cast(empty_point, "MULTIPOINT"), "sfc_MULTIPOINT")
+	expect_is(st_cast(empty_line, "MULTILINESTRING"), "sfc_MULTILINESTRING")
+	expect_is(st_cast(empty_poly, "MULTIPOLYGON"), "sfc_MULTIPOLYGON")
+
+	# sfg
+	expect_is(st_cast(empty_point[[1]], "MULTIPOINT"), "MULTIPOINT")
+	expect_is(st_cast(empty_line[[1]], "MULTILINESTRING"), "MULTILINESTRING")
+	expect_is(st_cast(empty_poly[[1]], "MULTIPOLYGON"), "MULTIPOLYGON")
+
+	# mixed
+	mixed_poly <- st_as_sfc(
+		c("MULTIPOLYGON (((5.5 0, 7 0, 7 -0.5, 5.5 0)), ((6.6 1, 8 1, 8 1.5, 6.6 1)))",
+			"POLYGON ((5.5 0, 7 0, 7 -0.5, 5.5 0))",
+			"MULTIPOLYGON EMPTY",
+			"POLYGON EMPTY"
+		))
+
+	# Automatic
+	expect_is(st_cast(mixed_poly), "sfc_MULTIPOLYGON")
+
+	# Explicit
+	expect_is(st_cast(mixed_poly, "MULTIPOLYGON"), "sfc_MULTIPOLYGON")
+})

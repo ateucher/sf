@@ -38,6 +38,12 @@ test_that("xx2multixx works", {
   expect_identical(sf:::POLYGON2MULTIPOLYGON(st_polygon(pts)), st_multipolygon(list(pts)))
 })
 
+test_that("xx2multixx works with empty", {
+	expect_identical(sf:::POINT2MULTIPOINT(st_point()), st_multipoint())
+	expect_identical(sf:::LINESTRING2MULTILINESTRING(st_linestring()), st_multilinestring())
+	expect_identical(sf:::POLYGON2MULTIPOLYGON(st_polygon()), st_multipolygon())
+})
+
 test_that("format works", {
 	digits = options("digits")[[1]]
 	options(digits = 16)
