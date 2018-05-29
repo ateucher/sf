@@ -129,11 +129,11 @@ st_cast.MULTIPOINT <- function(x, to, ...) {
 #' pl <- st_cast(nc$geometry[[4]], "POLYGON")
 #' st_sfc(cast_all(pl))
 st_cast.POLYGON <- function(x, to, ...) {
-  switch(to, 
-         MULTIPOLYGON = st_multipolygon(list(lapply(Paste0(x), ClosePol))),
-         MULTILINESTRING = st_multilinestring(unclass(x)), 
-         MULTIPOINT = st_multipoint(Tail1(unclass(x))[[1L]]), 
-         POLYGON = x, 
+  switch(to,
+         MULTIPOLYGON = POLYGON2MULTIPOLYGON(x),
+         MULTILINESTRING = st_multilinestring(unclass(x)),
+         MULTIPOINT = st_multipoint(Tail1(unclass(x))[[1L]]),
+         POLYGON = x,
          LINESTRING = st_linestring(unclass(x)[[1L]]),
          POINT = {warning("point from first coordinate only"); st_point(unclass(x)[[1L]][1L, , drop = TRUE])},
 		 GEOMETRYCOLLECTION = st_geometrycollection(list(x))
@@ -146,11 +146,11 @@ st_cast.POLYGON <- function(x, to, ...) {
 #' ls <- st_cast(nc$geometry[[4]], "LINESTRING")
 #' st_sfc(cast_all(ls))
 st_cast.LINESTRING <- function(x, to, ...) {
-  switch(to, 
-         MULTIPOLYGON = st_multipolygon(list(list(ClosePol(unclass(x))))), 
-         MULTILINESTRING = st_multilinestring(list(unclass(x))), 
-         MULTIPOINT = st_multipoint(unclass(x)), 
-         POLYGON = st_polygon(list(unclass(ClosePol(x)))), 
+  switch(to,
+         MULTIPOLYGON = st_multipolygon(list(list(ClosePol(unclass(x))))),
+         MULTILINESTRING = LINESTRING2MULTILINESTRING(x),
+         MULTIPOINT = st_multipoint(unclass(x)),
+         POLYGON = st_polygon(list(unclass(ClosePol(x)))),
          LINESTRING = x,
          POINT = {warning("point from first coordinate only"); st_point(unclass(x)[1L, , drop = TRUE])},
 		 GEOMETRYCOLLECTION = st_geometrycollection(list(x))
@@ -164,11 +164,11 @@ st_cast.LINESTRING <- function(x, to, ...) {
 #' ## st_sfc(cast_all(pt))  ## Error: cannot create MULTIPOLYGON from POINT 
 #' st_sfc(lapply(c("POINT", "MULTIPOINT"), function(x) st_cast(pt, x)))
 st_cast.POINT <- function(x, to, ...) {
-  switch(to, 
-         MULTIPOLYGON = stop("cannot create MULTIPOLYGON from POINT"), 
-         MULTILINESTRING = stop("cannot create MULTILINESTRING from POINT"), 
-         MULTIPOINT = st_multipoint(matrix(unclass(x), nrow = 1L)), 
-         POLYGON = stop("cannot create POLYGON from POINT"), 
+  switch(to,
+         MULTIPOLYGON = stop("cannot create MULTIPOLYGON from POINT"),
+         MULTILINESTRING = stop("cannot create MULTILINESTRING from POINT"),
+         MULTIPOINT = POINT2MULTIPOINT(x),
+         POLYGON = stop("cannot create POLYGON from POINT"),
          LINESTRING = stop("cannot create LINESTRING from POINT"),
          POINT = x,
 		 GEOMETRYCOLLECTION = st_geometrycollection(list(x))
