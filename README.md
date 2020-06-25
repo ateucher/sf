@@ -1,5 +1,5 @@
 <!-- badges: start -->
-[![R build status](https://github.com/r-spatial/sf/workflows/R-CMD-check/badge.svg)](https://github.com/r-spatial/sf)
+[![R build status](https://github.com/r-spatial/sf/workflows/R-CMD-check/badge.svg)](https://github.com/r-spatial/sf/actions)
 [![AppVeyor Build Status](https://ci.appveyor.com/api/projects/status/github/r-spatial/sf?branch=master&svg=true)](https://ci.appveyor.com/project/edzerpebesma/sf)
 [![Coverage Status](https://img.shields.io/codecov/c/github/r-spatial/sf/master.svg)](https://codecov.io/github/r-spatial/sf?branch=master)
 [![License](http://img.shields.io/badge/license-GPL%20%28%3E=%202%29-brightgreen.svg?style=flat)](http://www.gnu.org/licenses/gpl-2.0.html)
@@ -61,14 +61,31 @@ Installing sf from source works under windows when [Rtools](https://cran.r-proje
 
 ### MacOS
 
-The easiest way to install `gdal` is using Homebrew. Recent version of homebrew include a full-featured up-to-date [gdal formula](https://github.com/Homebrew/homebrew-core/blob/master/Formula/gdal.rb):
+The easiest way to install `gdal` is using Homebrew. Recent versions of homebrew include a full-featured up-to-date [gdal formula](https://github.com/Homebrew/homebrew-core/blob/master/Formula/gdal.rb), which installs `proj` and `gdal` at the same time:
 
 ```
 brew install pkg-config
 brew install gdal
 ```
 
-Once gdal is installed, you will be able to install `sf` package from source in R.
+Once gdal is installed, you will be able to install `sf` package from source in R. With the current version of `proj` (`7.0.0`) on homebrew, installation requires additional configuration:
+
+```r
+install.packages("sf", configure.args = "--with-proj-lib=/usr/local/lib/")
+```
+
+Or the development version:
+
+```r
+library(devtools)
+install_github("r-spatial/sf", configure.args = "--with-proj-lib=/usr/local/lib/")
+```
+
+If you are using `sf` and `rgdal` together it is necessary to install `rgal` from source using this configuration:
+
+```r
+install.packages("rgdal", configure.args = c("--with-proj-lib=/usr/local/lib/", "--with-proj-include=/usr/local/include/"))
+```
 
 Alternatively [these instructions](https://stat.ethz.ch/pipermail/r-sig-mac/2017-June/012429.html) explain how to install gdal using kyngchaos frameworks.
 
@@ -77,23 +94,30 @@ Alternatively [these instructions](https://stat.ethz.ch/pipermail/r-sig-mac/2017
 For Unix-alikes, GDAL (>= 2.0.1), GEOS (>= 3.4.0) and Proj.4 (>= 4.8.0) are required.
 
 #### Ubuntu
-Dependencies for recent (non-LTS, later than bionic) versions of Ubuntu are available in the official repositories; install them with
+
+Dependencies for recent versions of Ubuntu (18.04 and later) are available in the official repositories; you can install them with:
+
 ```sh
-sudo apt-get install libudunits2-dev libgdal-dev libgeos-dev libproj-dev 
+apt-get -y update && apt-get install -y  \
+  libudunits2-dev libgdal-dev libgeos-dev libproj-dev
 ```
 
-To install the dependencies on LTS versions of Ubuntu (xenial, bionic), either add [ubuntugis-unstable](http://ppa.launchpad.net/ubuntugis/ubuntugis-unstable/ubuntu/) to the package repositories and use:
+However, to get more up-to-date versions of dependencies such as GDAL, we recommend adding the [ubuntugis-unstable](http://ppa.launchpad.net/ubuntugis/ubuntugis-unstable/ubuntu/) PPA to the package repositories and installing them as follows:
+
 ```sh
 sudo add-apt-repository ppa:ubuntugis/ubuntugis-unstable
 sudo apt-get update
 sudo apt-get install libudunits2-dev libgdal-dev libgeos-dev libproj-dev 
 ```
-or install dependencies from source; see e.g. an older [travis](https://github.com/r-spatial/sf/blob/593ee48b34001fe3b383ea73ea57063ecf690732/.travis.yml) config file for hints.
+
+Adding this PPA is required for installing `sf` on older versions of Ubuntu (e.g. Xenial).
+
+Another option, for advanced users, is to install dependencies from source; see e.g. an older [travis](https://github.com/r-spatial/sf/blob/593ee48b34001fe3b383ea73ea57063ecf690732/.travis.yml) config file for hints.
 
 #### Fedora
 The following command installs all required dependencies:
 ```sh
-sudo dnf install gdal-devel proj-devel proj-epsg proj-nad geos-devel udunits2-devel
+sudo dnf install gdal-devel proj-devel proj-epsg proj-nad geos-devel sqlite-devel udunits2-devel
 ```
 
 #### Arch

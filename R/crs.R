@@ -302,9 +302,6 @@ proj4string = function(x) {
 	crs_parameters(x, with_units = FALSE)[["proj4string"]]
 }
 
-is_crs = function(x) {
-	inherits(x, "crs")
-}
 
 #' @name st_as_text
 #' @param pretty logical; if TRUE, print human-readable well-known-text representation of a coordinate reference system
@@ -415,7 +412,8 @@ format.crs = function(x, ...) {
 
 #' @export
 st_crs.Raster = function(x, ...) {
-	st_crs(x@crs) # nocov
+	crsobj <- raster::crs(x)
+	st_crs(crsobj) # nocov
 }
 
 #' @export
@@ -435,15 +433,17 @@ st_crs.Spatial = function(x, ...) {
 #' indicates the usual GIS (display) order (longitude,latitude). This can be useful
 #' when data are read, or have to be written, with coordinates in authority compliant order.
 #' The return value is the current state of this (\code{FALSE}, by default).
-#' @return \code{st_axis_order} returns the (logical) current value, invisibly if it is
-#' being set.
+#' @return \code{st_axis_order} returns the (logical) current value if called without
+#' argument, or (invisibly) the previous value if it is being set.
 #' @export
 #' @examples
 #' pt = st_sfc(st_point(c(0, 60)), crs = 4326)
 #' # st_axis_order() only has effect in GDAL >= 2.5.0:
 #' st_axis_order() # query default: FALSE means interpret pt as (longitude latitude)
 #' st_transform(pt, 3857)[[1]]
-#' (old_value = st_axis_order(TRUE))
+#' old_value = FALSE
+#' if (sf_extSoftVersion()["GDAL"] >= "2.5.0")
+#'    (old_value = st_axis_order(TRUE))
 #' # now interpret pt as (latitude longitude), as EPSG:4326 prescribes:
 #' st_axis_order() # query current value
 #' st_transform(pt, 3857)[[1]]

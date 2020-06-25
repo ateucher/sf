@@ -47,6 +47,7 @@ test_that("st_wrap_dateline works", {
 test_that('gdal_subdatasets works', {
   skip_if_not(sf_extSoftVersion()[["GDAL"]] >= "2.1.0")
   skip_if_not(sf_extSoftVersion()[["GDAL"]] < "2.5.0") # FIXME:
+  skip_on_os("mac") # FIXME:
   fname = system.file("nc/cropped.nc", package = "sf")
   sd2 = gdal_subdatasets(fname)[[2]]
 })
@@ -84,6 +85,8 @@ test_that('gdal_utils work', {
   points = system.file("gpkg/nc.gpkg", package="sf")
   expect_true(gdal_utils("grid", points, tf))
   expect_true(gdal_utils("buildvrt", sd2, tf3))
+  expect_true(gdal_utils("buildvrt", sd2, tf3, "-oo", "FOO=BAR")) # fake opening options
+  expect_error(gdal_utils("buildvrt", "foo.tif", tf3, "-oo", "FOO=BAR"), "cannot open source dataset")
   expect_true(gdal_utils("demprocessing", sd2, tf, processing = "hillshade"))
 })
 

@@ -141,8 +141,8 @@ CPL_gdal_warper <- function(infile, outfile, options, oo, doo) {
     .Call('_sf_CPL_gdal_warper', PACKAGE = 'sf', infile, outfile, options, oo, doo)
 }
 
-CPL_write_ogr <- function(obj, dsn, layer, driver, dco, lco, geom, dim, fids, quiet, append, delete_dsn = FALSE, delete_layer = FALSE) {
-    .Call('_sf_CPL_write_ogr', PACKAGE = 'sf', obj, dsn, layer, driver, dco, lco, geom, dim, fids, quiet, append, delete_dsn, delete_layer)
+CPL_write_ogr <- function(obj, dsn, layer, driver, dco, lco, geom, dim, fids, quiet, append, delete_dsn = FALSE, delete_layer = FALSE, write_geometries = TRUE) {
+    .Call('_sf_CPL_write_ogr', PACKAGE = 'sf', obj, dsn, layer, driver, dco, lco, geom, dim, fids, quiet, append, delete_dsn, delete_layer, write_geometries)
 }
 
 CPL_geos_binop <- function(sfc0, sfc1, op, par = 0.0, pattern = "", prepared = FALSE) {
@@ -325,11 +325,11 @@ CPL_write_wkb <- function(sfc, EWKB = FALSE) {
     .Call('_sf_CPL_write_wkb', PACKAGE = 'sf', sfc, EWKB)
 }
 
-CPL_get_z_range <- function(sf, depth = 0L) {
+CPL_get_z_range <- function(sf, depth) {
     .Call('_sf_CPL_get_z_range', PACKAGE = 'sf', sf, depth)
 }
 
-CPL_get_m_range <- function(sf, depth = 0L) {
+CPL_get_m_range <- function(sf, depth) {
     .Call('_sf_CPL_get_m_range', PACKAGE = 'sf', sf, depth)
 }
 

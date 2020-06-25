@@ -7,7 +7,7 @@
 #' @param y ignored
 #' @param ... further specifications, see \link{plot_sf} and \link{plot} and details.
 #' @param main title for plot (\code{NULL} to remove)
-#' @param pal palette function, similar to \link[grDevices]{rainbow}, or palette values; if omitted, \code{sf.colors} is used
+#' @param pal palette function, similar to \link{rainbow}, or palette values; if omitted, \code{sf.colors} is used
 #' @param nbreaks number of colors breaks (ignored for \code{factor} or \code{character} variables)
 #' @param breaks either a numeric vector with the actual breaks, or a name of a method accepted by the \code{style} argument of \link[classInt]{classIntervals}
 #' @param max.plot integer; lower boundary to maximum number of attributes to plot; the default value (9) can be overriden by setting the global option \code{sf_max.plot}, e.g. \code{options(sf_max.plot=2)}
@@ -25,6 +25,9 @@
 #' @param type plot type: 'p' for points, 'l' for lines, 'b' for both
 #' @param reset logical; if \code{FALSE}, keep the plot in a mode that allows adding further map elements; if \code{TRUE} restore original mode after plotting \code{sf} objects with attributes; see details.
 #' @param logz logical; if \code{TRUE}, use log10-scale for the attribute variable. In that case, \code{breaks} and \code{at} need to be given as log10-values; see examples.
+#' @param extent object with an \code{st_bbox} method to define plot extent; defaults to \code{x}
+#' @param xlim numeric; x-axis limits; overrides \code{extent}
+#' @param ylim numeric; y-axis limits; overrides \code{extent}
 #' @method plot sf
 #' @name plot
 #' @details \code{plot.sf} maximally plots \code{max.plot} maps with colors following from attribute columns,
@@ -63,7 +66,8 @@
 plot.sf <- function(x, y, ..., main, pal = NULL, nbreaks = 10, breaks = "pretty",
 		max.plot = if(is.null(n <- options("sf_max.plot")[[1]])) 9 else n,
 		key.pos = get_key_pos(x, ...), key.length = .618, key.width = lcm(1.8),
-		reset = TRUE, logz = FALSE) {
+		reset = TRUE, logz = FALSE, extent = x, xlim = st_bbox(extent)[c(1,3)],
+		ylim = st_bbox(extent)[c(2,4)]) {
 
 	stopifnot(missing(y))
 	nbreaks.missing = missing(nbreaks)
@@ -118,7 +122,7 @@ plot.sf <- function(x, y, ..., main, pal = NULL, nbreaks = 10, breaks = "pretty"
 		# loop over each map to plot:
 		lapply(cols, function(cname) plot(x[, cname], main = cname,
 			pal = pal, nbreaks = nbreaks, breaks = breaks, key.pos = NULL, reset = FALSE,
-			logz = logz, ...))
+			logz = logz, xlim = xlim, ylim = ylim,...))
 
 		for (i in seq_len(prod(lt$mfrow) - length(cols))) # empty panels:
 			plot.new()
@@ -143,7 +147,7 @@ plot.sf <- function(x, y, ..., main, pal = NULL, nbreaks = 10, breaks = "pretty"
 		if (!isTRUE(dots$add) && reset)
 			layout(matrix(1)) # reset
 		if (ncol(x) == 1) # no attributes to choose colors from: plot geometry
-			plot(st_geometry(x), ...)
+			plot(st_geometry(x), xlim = xlim, ylim = ylim, ...)
 		else { # generate plot with colors and possibly key
 			if (ncol(x) > 2) { # add = TRUE
 				warning("ignoring all but the first attribute")
@@ -237,9 +241,9 @@ plot.sf <- function(x, y, ..., main, pal = NULL, nbreaks = 10, breaks = "pretty"
 				mar[1:2] = 2.1
 			par(mar = mar)
 			if (col_missing)
-				plot(st_geometry(x), col = col, ...)
+				plot(st_geometry(x), col = col, xlim = xlim, ylim = ylim, ...)
 			else
-				plot(st_geometry(x), ...)
+				plot(st_geometry(x), xlim = xlim, ylim = ylim, ...)
 		}
 		if (! isTRUE(dots$add)) { # title?
 			if (missing(main)) {
@@ -247,7 +251,7 @@ plot.sf <- function(x, y, ..., main, pal = NULL, nbreaks = 10, breaks = "pretty"
 				if (length(main) && inherits(x[[main]], "units"))
 					main = make_unit_label(main, x[[main]])
 			}
-			localTitle <- function(..., col, bg, pch, cex, lty, lwd, axes, type, bgMap,
+			localTitle <- function(..., extent, col, bg, pch, cex, lty, lwd, axes, type, bgMap,
 					border, graticule, xlim, ylim, asp, bgc, xaxs, yaxs, lab, setParUsrBB,
 					expandBB, col_graticule, at, lon, lat, crs, datum, ndiscr, margin) # absorb
 				title(...)

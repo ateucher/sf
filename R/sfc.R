@@ -22,6 +22,7 @@ format.sfc = function(x, ..., width = 30) {
 #' @param crs coordinate reference system: integer with the EPSG code, or character with proj4string
 #' @param precision numeric; see \link{st_as_binary}
 #' @param check_ring_dir see \link{st_read}
+#' @param dim character; if this function is called without valid geometries, this argument may carry the right dimension to set empty geometries
 #' @return an object of class \code{sfc}, which is a classed list-column with simple feature geometries.
 #'
 #' @details A simple feature geometry list-column is a list of class
@@ -34,7 +35,7 @@ format.sfc = function(x, ..., width = 30) {
 #' (sfc = st_sfc(pt1, pt2))
 #' d = st_sf(data.frame(a=1:2, geom=sfc))
 #' @export
-st_sfc = function(..., crs = NA_crs_, precision = 0.0, check_ring_dir = FALSE) {
+st_sfc = function(..., crs = NA_crs_, precision = 0.0, check_ring_dir = FALSE, dim) {
 	lst = list(...)
 	# if we have only one arg, which is already a list with sfg's, but NOT a geometrycollection:
 	# (this is the old form of calling st_sfc; it is way faster to call st_sfc(lst) if lst
@@ -68,11 +69,18 @@ st_sfc = function(..., crs = NA_crs_, precision = 0.0, check_ring_dir = FALSE) {
 	}
 
 	if (any(is_null)) {
+		if (missing(dim)) {
+			dim = if (length(lst) == 0) # we have no clue:
+					"XY"
+				else
+					sfg_classes[1L, 1L]
+		}
 		ret = vector("list", length(is_null))
 		ret[!is_null] = lst
-		ret[ is_null] = list(typed_empty(cls))
+		ret[ is_null] = list(typed_empty(cls, nchar(dim), dim = dim))
 		attributes(ret) = attributes(lst)
 		lst = ret
+		sfg_classes = vapply(lst, class, rep(NA_character_, 3))
 	}
 
 	# set class:
@@ -97,7 +105,7 @@ st_sfc = function(..., crs = NA_crs_, precision = 0.0, check_ring_dir = FALSE) {
 		} else if ( "XYZ" %in% u ) {
 			attr(lst, "z_range") = compute_z_range(lst)
 		} else if ("XYM" %in% u ) {
-			attr(lst, "m_range") = compute_z_range(lst) ## because it's the 3rd element
+			attr(lst, "m_range") = compute_m_range(lst)
 		}
 	}
 
@@ -135,7 +143,8 @@ sfg_is_empty = function(x) {
 "[.sfc" = function(x, i, j, ..., op = st_intersects) {
 	if (!missing(i) && (inherits(i, "sf") || inherits(i, "sfc") || inherits(i, "sfg")))
 		i = lengths(op(x, i, ...)) != 0
-	st_sfc(unclass(x)[i], crs = st_crs(x), precision = st_precision(x))
+	st_sfc(unclass(x)[i], crs = st_crs(x), precision = st_precision(x), 
+		dim = if(length(x)) class(x[[1]])[1] else "XY")
 }
 
 
@@ -276,9 +285,9 @@ st_geometry.sfc = function(obj, ...) obj
 #'
 #' Return geometry type of an object, as a factor
 #' @param x object of class \link{sf} or \link{sfc}
-#' @param by_geometry logical; if \code{TRUE}, return geometry type of each geometry, 
+#' @param by_geometry logical; if \code{TRUE}, return geometry type of each geometry,
 #' else return geometry type of the set
-#' @return a factor with the geometry type of each simple feature geometry 
+#' @return a factor with the geometry type of each simple feature geometry
 #' in \code{x}, or that of the whole set
 #' @export
 st_geometry_type = function(x, by_geometry = TRUE) {
@@ -447,15 +456,15 @@ st_set_precision.sf <- function(x, precision) {
     st_set_precision(x, value)
 }
 
-typed_empty = function(cls) {
+typed_empty = function(cls, ncol = 2, dim = "XY") {
 	switch(cls[1],
-		sfc_POINT = st_point(),
-		sfc_MULTIPOINT = st_multipoint(),
-		sfc_LINESTRING = st_linestring(),
-		sfc_MULTILINESTRING = st_multilinestring(),
-		sfc_POLYGON = st_polygon(),
-		sfc_MULTIPOLYGON = st_multipolygon(),
-		st_geometrycollection())
+		sfc_POINT = st_point(rep(NA_real_, ncol), dim = dim),
+		sfc_MULTIPOINT = st_multipoint(matrix(numeric(0), ncol = ncol), dim = dim),
+		sfc_LINESTRING = st_linestring(matrix(numeric(0), ncol = ncol), dim = dim),
+		sfc_MULTILINESTRING = st_multilinestring(dim = dim),
+		sfc_POLYGON = st_polygon(dim = dim),
+		sfc_MULTIPOLYGON = st_multipolygon(dim = dim),
+		st_geometrycollection(dims = dim))
 }
 
 #' retrieve coordinates in matrix form

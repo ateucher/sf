@@ -143,7 +143,11 @@ st_transform.sfg = function(x, crs = st_crs(x), ...) {
 #' @export
 #' @details \code{sf_proj_info} lists the available projections, ellipses, datums, units, or data search path of the PROJ library when \code{type} is equal to proj, ellps, datum, units or path; when \code{type} equals \code{have_datum_files} a boolean is returned indicating whether datum files are installed and accessible (checking for \code{conus}).
 #'
-#' PROJ >= 6 does not provide option \code{type = "datums"}. PROJ < 6 does not provide the option \code{type = "prime_meridians"}.
+#' for PROJ >= 6, \code{sf_proj_info} does not provide option \code{type = "datums"}. 
+#' PROJ < 6 does not provide the option \code{type = "prime_meridians"}.
+#'
+#' for PROJ >= 7.1.0, the "units" query of \code{sf_proj_info} returns the \code{to_meter} 
+#' variable as numeric, previous versions return a character vector containing a numeric expression.
 #' @examples
 #' sf_proj_info("datum")
 sf_proj_info = function(type = "proj", path) {
@@ -222,22 +226,27 @@ st_to_s2 = function(x) {
 #' `keep` is `TRUE`, then such points will yield `Inf` or `-Inf` in the
 #' return value; otherwise an error is reported and nothing is returned.
 #' @param warn logical; if \code{TRUE}, warn when non-finite values are generated
-#' @param authority_compliant logical; handle axis order authority compliant (e.g. EPSG:4326 has x=lat, y=lon) or use visualisation order (x=lon, y=lat)
+#' @param authority_compliant logical; \code{TRUE} means handle axis order authority compliant (e.g. EPSG:4326 implying x=lat, y=lon), \code{FALSE} means use visualisation order (i.e. always x=lon, y=lat)
 #' @return two-column numeric matrix with transformed/converted coordinates, returning invalid values as \code{Inf}
 #' @export
-sf_project = function(from, to, pts, keep = FALSE, warn = TRUE, authority_compliant = st_axis_order()) {
-	if (inherits(from, "crs"))
-		from = from$wkt
-	if (inherits(to, "crs"))
-		to = to$wkt
-	if (!is.logical(keep) || 1 != length(keep))
-		stop("'keep' must be single-length logical value")
-	v = CPL_proj_is_valid(from)
-	if (!v[[1]])
-		stop(paste0(v[[2]], ": ", from))
-	v = CPL_proj_is_valid(to)
-	if (!v[[1]])
-		stop(paste0(v[[2]], ": ", to))
-	CPL_proj_direct(as.character(c(from[1], to[1])), as.matrix(pts), 
-			if (keep) 1 else 0, warn, authority_compliant)
+sf_project = function(from, to, pts, keep = FALSE, warn = TRUE, 
+		authority_compliant = st_axis_order()) {
+
+	proj_from_crs = function(x) {
+		if (inherits(x, "crs")) {
+			x = if (sf_extSoftVersion()["proj.4"] >= "6.0.0")
+				x$wkt
+			else
+				x$proj4string
+		}
+		v = CPL_proj_is_valid(x)
+		if (!v[[1]])
+			stop(paste0(v[[2]], ": ", x))
+		x[1]
+	}
+	if (!is.logical(keep) || length(keep) != 1 || is.na(keep))
+		stop("'keep' must be single-length non-NA logical value")
+
+	CPL_proj_direct(c(proj_from_crs(from), proj_from_crs(to)), as.matrix(pts), 
+			keep, warn, authority_compliant)
 }

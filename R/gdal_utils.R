@@ -15,6 +15,7 @@ resampling_method = function(option = "near") {
 		med = 10,
 		q1 = 11,
 		q3 = 12,
+		sum = 13,
 		stop(paste("unknown option:", options))
 	)
 }
@@ -72,8 +73,8 @@ resampling_method = function(option = "near") {
 gdal_utils = function(util = "info", source, destination, options = character(0),
 		quiet = FALSE, processing = character(0), colorfilename = character(0)) {
 
-	if ("-co" %in% options)
-		options["-co" == options] = "-oo"
+#	if ("-co" %in% options)
+#		options["-co" == options] = "-oo"
 	if ("-oo" %in% options) { # -oo indicating opening options
 		ooi = which("-oo" == options)
 		oo = options[ooi + 1]

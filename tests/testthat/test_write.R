@@ -2,20 +2,25 @@ context("sf: write")
 
 data(meuse, package = "sp")
 meuse <- st_as_sf(meuse, coords = c("x", "y"), crs = 28992)
+drvs <- st_drivers()$name[sapply(st_drivers()$name,
+	function(x) is_driver_can(x, operation = "write"))] %>% as.character()
 
 test_that("sf can write to all writable formats", {
-    # write to all formats available
-    tf <- tempfile()
-    drvs <- st_drivers()$name[sapply(st_drivers()$name,
-		function(x) is_driver_can(x, operation = "write"))] %>% as.character()
-    excluded_drivers = c("gps", # requires options
-                         "gtm", # doesn't handle attributes
-                         "nc",  # requires appropriate datum -> but writes in 4326, see below
-                         "map", # doesn't support points
-						 "ods") # generates valgrind error
+	# write to all formats available
+	tf <- tempfile()
+	excluded_drivers = c("gps", # requires options
+				"gtm", # doesn't handle attributes
+				"nc",  # requires appropriate datum -> but writes in 4326, see below
+				"map", # doesn't support points
+				"ods") # generates valgrind error
     for (ext in setdiff(names(extension_map[extension_map %in% drvs]), excluded_drivers)) {
         expect_silent(st_write(meuse, paste0(tf, ".", ext), quiet = TRUE))
 	}
+})
+
+test_that("sf can write to netcdf", {
+	skip_on_os("windows")
+	tf <- tempfile()
 	if ("netCDF" %in% drvs) {
 		expect_silent(st_write(st_transform(meuse, st_crs(4326)), paste0(tf, ".nc"), quiet = TRUE))
 	}
@@ -134,4 +139,29 @@ test_that("append errors work", {
     "Cannot append to existing dataset.")
   
   system(paste("chmod +w", f))
+})
+
+test_that("non-spatial tables can be written to GPKG; #1345", {
+  nc = system.file("gpkg/nc.gpkg", package = "sf")
+  tf = tempfile(fileext = ".gpkg")
+  file.copy(nc, tf)
+  # how does an aspatial layer look like? NA geometry_type
+  l = st_layers(system.file("gpkg/nospatial.gpkg", package = "sf"))
+  expect_true(is.na(l$geomtype[[1]]))
+  # demo:
+  #a = data.frame(a = c(1L,-3L), b = c("foo", "bar"))
+  a = data.frame(a = c(1L,-3L), b = c(3.5, 7.33))
+  expect_silent(write_sf(a, tf, 
+           layer = "nonspatial_table1",
+           driver = "GPKG",
+		   delete_layer = TRUE,
+           layer_options = "ASPATIAL_VARIANT=GPKG_ATTRIBUTES"))
+  l2 = st_layers(tf)
+  expect_true(is.na(l2$geomtype[[2]])) # hence is aspatial
+  a2 = as.data.frame(read_sf(tf, "nonspatial_table1"))
+  expect_identical(a, a2)
+  expect_output(
+		  expect_warning(st_read(tf, "nonspatial_table1"), 
+			  "no simple feature geometries present:"),
+	  "Reading layer `nonspatial_table1' from data source")
 })
